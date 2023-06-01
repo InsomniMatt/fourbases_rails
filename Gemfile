@@ -54,3 +54,5 @@ gem "pg", "~> 1.4"
 gem "rack-cors", "~> 2.0"
 
 gem "httparty", "~> 0.21.0"
+
+gem "deep_freeze", "~> 0.0.1"
