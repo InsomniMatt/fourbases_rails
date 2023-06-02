@@ -4,6 +4,7 @@ class BaseballApi
   include BaseballEndpoints
 
   def self.api_request(endpoint, options = {})
+    puts options
     url_info = ENDPOINTS[endpoint]
     url = url_info[:url].dup
     url_info[:path_params].each do |path_key, value|
@@ -11,6 +12,7 @@ class BaseballApi
       url.sub! "{#{path_key}}", path_value.to_s
     end
     query = options.slice(*url_info[:query_params])
+    puts query
     HTTParty.get(url, {:query => query})
   end
 
@@ -42,5 +44,9 @@ class BaseballApi
   def self.game_at_bats(game_id, options = {})
     api_response = BaseballApi.api_request("game_playByPlay", {"gamePk": game_id}.merge(options))
     api_response['allPlays'].filter{_1["result"]["type"] == "atBat"}
+  end
+
+  def self.player_stats(player_id, options = {})
+    BaseballApi.api_request("person_stats", {"personId": player_id, "stats": "season"}.merge(options))
   end
 end

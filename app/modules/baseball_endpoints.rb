@@ -648,6 +648,27 @@ module BaseballEndpoints
       "required_params": [[]],
     },
     "person_stats": {
+      "url": BASE_URL + "{ver}/people/{personId}/stats",
+      "path_params": {
+        "ver": {
+          "type": "str",
+          "default": "v1",
+          "leading_slash": false,
+          "trailing_slash": false,
+          "required": true,
+        },
+        "personId": {
+          "type": "str",
+          "default": nil,
+          "leading_slash": false,
+          "trailing_slash": false,
+          "required": true,
+        },
+      },
+      "query_params": [:fields, :stats],
+      "required_params": [["stats"]],
+    },
+    "person_game_stats": {
       "url": BASE_URL + "{ver}/people/{personId}/stats/game/{gamePk}",
       "path_params": {
         "ver": {
@@ -666,7 +687,7 @@ module BaseballEndpoints
         },
         "gamePk": {
           "type": "str",
-          "default": nil,
+          "default": "current",
           "leading_slash": false,
           "trailing_slash": false,
           "required": true,

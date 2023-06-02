@@ -4,8 +4,9 @@ class PlayersController < ApplicationController
   # GET /players
   def index
     players_response = BaseballApi.team_player_list(team_id_param)
-
-    render status: :ok, json: players_response['roster'].map{ {name: _1['person']['fullName'], jersey_number: _1['jerseyNumber'], position: _1['position']['abbreviation'], id: _1['person']['id']}}
+    puts players_response['roster'].map{ {name: _1['person']['fullName'], jersey_number: _1['jerseyNumber'], position: _1['position']['abbreviation'], player_id: _1['person']['id']}}
+    byebug
+    render status: :ok, json: players_response['roster'].map{ {name: _1['person']['fullName'], jersey_number: _1['jerseyNumber'], position: _1['position']['abbreviation'], player_id: _1['person']['id']}}
   end
 
   # GET /players/1
