@@ -1,8 +1,10 @@
 Rails.application.routes.draw do
-  resources :players
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  resources :players, only: [:index] do
+    get 'stats', to: 'players#stats'
+  end
 
-  # Defines the root path route ("/")
-  # root "articles#index"
-  resources :players, only: [:index]
+  resource :players, only: [] do
+    get 'search', to: 'players#search'
+  end
+
 end

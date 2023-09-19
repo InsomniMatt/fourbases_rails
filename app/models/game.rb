@@ -5,26 +5,16 @@ class Game < ApplicationRecord
 
   scope :completed, -> { where("game_time < ?", DateTime.now) }
 
-  def at_bats
-    return [] unless game_completed?
-    if at_bats.empty?
-      import_at_bats
-    end
-    at_bats
-  end
-
   def game_completed?
     game_time < DateTime.now
   end
 
   def import_at_bats
     at_bats.delete_all
-    BaseballApi.game_at_bats(id).each do |at_bat|
-      AtBat.create!({
-                      :pitcher_id => at_bat["matchup"]["pitcher"]["id"],
-                      :batter_id => at_bat["matchup"]["batter"]["id"],
-                    })
+    new_at_bats = Baseline.game_at_bats(id).map do |at_bat|
+      AtBat.parse_api_response(at_bat, id)
     end
+    AtBat.create!(new_at_bats)
 
   end
 
