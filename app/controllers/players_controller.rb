@@ -1,5 +1,5 @@
 class PlayersController < ApplicationController
-  before_action :set_player, :only => [:show, :stats]
+  before_action :set_player, :only => [:show, :stats, :rolling_stats]
 
   # GET /players
   def index
@@ -19,6 +19,7 @@ class PlayersController < ApplicationController
     stats = Baseline.player_stats(player_id_param)["stats"].first
     info = stats["group"]
     info["playerName"] = @player.name
+    info["playerId"] = @player.id
     info["teamLogo"] = @player.team.logo_url
     info["teamColors"] = @player.team.colors
     render json: {info: info, stats: stats["splits"].first["stat"], portrait: player_portrait_url}
@@ -27,6 +28,10 @@ class PlayersController < ApplicationController
   def search
     players = Player.where("name LIKE ?", "%#{params['search']}%")
     render status: :ok, json: {players: players}
+  end
+
+  def rolling_stats
+    render status: :ok, json: {rolling_stats: @player.rolling_average}
   end
 
   private
