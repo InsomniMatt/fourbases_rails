@@ -55,5 +55,6 @@ gem "rack-cors", "~> 2.0"
 
 gem "httparty", "~> 0.21.0"
 
-gem "baseline_stats", path: "~/Dev/ruby-projects/baseline_stats"
+# gem "baseline_stats"
+gem "baseline_stats"
 gem "ice_nine"

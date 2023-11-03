@@ -1,4 +1,6 @@
 class AtBat < ApplicationRecord
+  default_scope { order(game_id: :desc, at_bat_index: :asc)}
+
   belongs_to :game
   belongs_to :pitcher, class_name: "Player"
   belongs_to :batter, class_name: "Player"
@@ -27,7 +29,6 @@ class AtBat < ApplicationRecord
     end
     batter = Player.find(at_bat["matchup"]["batter"]["id"])
     pitcher = Player.find(at_bat["matchup"]["pitcher"]["id"])
-
     {
         :pitcher => pitcher,
         :batter => batter,
@@ -37,6 +38,7 @@ class AtBat < ApplicationRecord
         :inning_half => at_bat["about"]["halfInning"],
         :result => at_bat["result"]["eventType"].to_sym,
         :pitches => pitches.compact,
+        :at_bat_index => at_bat["atBatIndex"],
     }
   end
 
@@ -64,12 +66,13 @@ class AtBat < ApplicationRecord
     OUT_ARRAY.include? result
   end
 
+  NO_AB_ARRAY = %w(walk hit_by_pitch sac_fly sac_bunt)
   def count_at_bat?
-    !walk? && !hit_by_pitch? && !sac_bunt? && !sac_fly?
+    !NO_AB_ARRAY.include? result
   end
 
-  AB_ARRAY = HIT_ARRAY + [ "field_out" ]
-  def ab_value
-    hit?
+  def + other_bat
+    raise "AtBat can only be added to other AtBat" unless other_bat.class == AtBat
+    AtBatCollection.new([self, other_bat])
   end
 end

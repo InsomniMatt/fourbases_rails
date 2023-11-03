@@ -1,4 +1,7 @@
 class Game < ApplicationRecord
+  default_scope {order(:game_time)}
+
+
   belongs_to :home_team, class_name: "Team"
   belongs_to :away_team, class_name: "Team"
   has_many :at_bats

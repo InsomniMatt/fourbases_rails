@@ -5,6 +5,7 @@ class Player < ApplicationRecord
   has_many :pitched_at_bats, foreign_key: :pitcher_id, class_name: "AtBat"
   has_many :pitches, through: :at_bats
 
+  attr_accessor :at_bat_collection
 
   def api_stats
     Baseline.player_stats(id, {"stats": "season"})
@@ -35,44 +36,40 @@ class Player < ApplicationRecord
     Player.create! player_object
   end
 
+  def at_bat_collection
+    return @at_bat_collection if @at_bat_collection.present?
+    @at_bat_collection = AtBatCollection.new(at_bats)
+  end
+
   def avg
-    (hit_count.to_f / stat_ab_count.to_f).round(3).to_s.sub(/^0/, '')
+    at_bat_collection.avg
   end
 
   def obp
-    (on_base_count.to_f / stat_ab_count.to_f).round(3).to_s.sub(/^0/, '')
+    at_bat_collection.obp
   end
 
   def slg
-    (slug_count.to_f / stat_ab_count.to_f).round(3).to_s.sub(/^0/, '')
+    at_bat_collection.slg
   end
 
   def ops
-    (obp.to_f + slg.to_f).to_s.to_s.sub(/^0/, '')
+    at_bat_collection.ops
   end
 
-  def abs_by_game
-
+  def rolling_range
+    at_bat_collection.rolling_range
   end
 
-  def stat_ab_count(manual_abs = [])
-    abs = manual_abs.present? ? manual_abs : at_bats
-    abs.filter {_1.count_at_bat?}.count
-  end
-
-  def hit_count(manual_abs = [])
-    abs = manual_abs.present? ? manual_abs : at_bats
-    abs.filter {_1.hit?}.count
-  end
-
-  def on_base_count(manual_abs = [])
-    abs = manual_abs.present? ? manual_abs : at_bats
-    abs.filter { _1.on_base? }.count
-  end
-
-  def slug_count(manual_abs = [])
-    abs = manual_abs.present? ? manual_abs : at_bats
-    abs.inject(0){|base_sum, at_bat| base_sum + at_bat.base_count }
+  def rolling_average
+    ranges = rolling_range
+    {
+      dates: ranges.map { "Last AB: #{_1[:time]}" },
+      avg: ranges.map { _1[:avg]},
+      obp: ranges.map {_1[:obp]},
+      slg: ranges.map { _1[:slg]},
+      ops: ranges.map { _1[:ops]}
+    }
   end
 
   def at_bat_by_date(manual_abs = [])
@@ -87,6 +84,14 @@ class Player < ApplicationRecord
       result
     end
 
+  end
+
+  def at_bats_by_game(manual_games = [])
+    games = manual_games.present? ? manual_games : self.games.includes(:at_bats).where("at_bats.batter_id = ?", id).references(:at_bats)
+    games.inject({}) do |result, game|
+      result[game.id] = game.at_bats
+      result
+    end
   end
 
   def portrait_url
