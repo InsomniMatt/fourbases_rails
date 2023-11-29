@@ -57,18 +57,18 @@ class Player < ApplicationRecord
     at_bat_collection.ops
   end
 
-  def rolling_range
-    at_bat_collection.rolling_range
+  def rolling_range size = 50, comparing = false
+    at_bat_collection.rolling_range(size, comparing)
   end
 
-  def rolling_average
+  def rolling_stats
     ranges = rolling_range
     {
-      dates: ranges.map { "Last AB: #{_1[:time]}" },
-      avg: ranges.map { _1[:avg]},
-      obp: ranges.map {_1[:obp]},
-      slg: ranges.map { _1[:slg]},
-      ops: ranges.map { _1[:ops]}
+      dates: ranges.map { _2[:time] },
+      avg: ranges.map { _2[:avg]},
+      obp: ranges.map {_2[:obp]},
+      slg: ranges.map { _2[:slg]},
+      ops: ranges.map { _2[:ops]}
     }
   end
 
@@ -96,6 +96,26 @@ class Player < ApplicationRecord
 
   def portrait_url
     "https://img.mlbstatic.com/mlb-photos/image/upload/v1/people/#{id.to_s}/headshot/67/current";
+  end
+
+  def compare_to_baseline_player(baseline_player)
+    comparison = at_bat_collection.compare_to_baseline(baseline_player)
+    result = {avg: [], dates: [], obp: [], ops: [], slg: []}
+    comparison.to_a.each do |el|
+      result[:dates] << el[0]
+      result[:avg] << el[1][:avg]
+      result[:obp] << el[1][:obp]
+      result[:ops] << el[1][:ops]
+      result[:slg] << el[1][:slg]
+    end
+    result
+    # {
+    #   dates: comparison.map { _2[:time] },
+    #   avg: comparison.map { _2[:avg]},
+    #   obp: comparison.map {_2[:obp]},
+    #   slg: comparison.map { _2[:slg]},
+    #   ops: comparison.map { _2[:ops]}
+    # }
   end
 
 end

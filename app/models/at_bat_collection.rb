@@ -5,19 +5,35 @@ class AtBatCollection
   end
 
   def avg
-    (hit_count.to_f / stat_ab_count.to_f).round(3).to_s.sub(/^0/, '')
+    "%.3f" % avg_raw
   end
 
   def obp
-    (on_base_count.to_f / stat_ab_count.to_f).round(3).to_s.sub(/^0/, '')
+    "%.3f" % obp_raw
   end
 
   def slg
-    (slug_count.to_f / stat_ab_count.to_f).round(3).to_s.sub(/^0/, '')
+    "%.3f" % slg_raw
   end
 
   def ops
-    (obp.to_f + slg.to_f).to_s.to_s.sub(/^0/, '')
+    "%.3f" % ops_raw
+  end
+
+  def avg_raw
+    (hit_count.to_f / stat_ab_count.to_f)
+  end
+
+  def obp_raw
+    (on_base_count.to_f / stat_ab_count.to_f)
+  end
+
+  def slg_raw
+    (slug_count.to_f / stat_ab_count.to_f)
+  end
+
+  def ops_raw
+    (obp_raw + slg_raw)
   end
 
   def stat_ab_count
@@ -62,9 +78,10 @@ class AtBatCollection
     end
   end
 
-  def rolling_range size = 50
-    collections = []
+  def rolling_range size = 50, comparing = false
+    collections = {}
     last_time = nil
+    last_collection = nil
     @at_bats.inject([]) do |arr, at_bat|
       arr << at_bat
       if arr.count > size
@@ -72,9 +89,15 @@ class AtBatCollection
       end
       unless at_bat.game_time == last_time
         if arr.count == size
-          new_collection = AtBatCollection.new(arr).stat_obj
-          last_time = new_collection[:time]
-          collections << new_collection
+          if comparing && last_time.present?
+            until (at_bat.game_time.to_date <= last_time)
+              last_time = last_time.next
+              collections[last_time] = last_collection
+            end
+          end
+          last_collection = AtBatCollection.new(arr).stat_obj
+          last_time = last_collection[:time]
+          collections[last_time] = last_collection
         end
       end
       arr
@@ -88,7 +111,33 @@ class AtBatCollection
       obp: obp,
       slg: slg,
       ops: ops,
-      time: @at_bats.last.game.game_time.to_date.to_s
+      time: @at_bats.last.game.game_time.to_date,
     }
+  end
+
+  def compare_to_baseline baseline_player
+    baseline_rolling_range = baseline_player.rolling_range(50, true)
+    cached_stat = nil
+    rolling_range(50, true).inject({}) do |result, day_object|
+      day = day_object.first
+      day_value = day_object.last
+
+      today_baseline = baseline_rolling_range[day] || cached_stat
+      cached_stat = today_baseline
+      if today_baseline.present?
+        result[day] = day_value.inject({}) do |day_result, stat_object|
+          stat = stat_object.first
+          unless stat == :time
+            stat_value = stat_object.last
+            day_result[stat] = "%.3f" % (stat_value.to_f - today_baseline[stat].to_f)
+          end
+          day_result
+        end
+      end
+      result
+      # result[day] = {
+      #   :avg => value[:avg].to_f - today_baseline[:avg]
+      # }
+    end
   end
 end
