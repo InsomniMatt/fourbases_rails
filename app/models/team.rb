@@ -7,8 +7,8 @@ class Team < ApplicationRecord
   COLORS = {
       108 => {
         # Angels
-        primary: "#BA0021",
-        secondary: "#003263",
+        primary: "#862633",
+        secondary: "#C4CED4",
       },
       109 => {
         # Diamondbacks

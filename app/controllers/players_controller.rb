@@ -1,5 +1,5 @@
 class PlayersController < ApplicationController
-  before_action :set_player, :only => [:show, :stats, :rolling_stats]
+  before_action :set_player, :only => [:show, :stats, :rolling_stats, :compare_to_baseline]
 
   # GET /players
   def index
@@ -16,13 +16,18 @@ class PlayersController < ApplicationController
   # GET /player/:id/stats
   def stats
     player_portrait_url = @player.portrait_url
-    stats = Baseline.player_stats(player_id_param)["stats"].first
-    info = stats["group"]
+    stats = Baseline.player_stats(@player.id)["stats"].first
+    info = stats ? stats["group"] : {}
     info["playerName"] = @player.name
     info["playerId"] = @player.id
     info["teamLogo"] = @player.team.logo_url
     info["teamColors"] = @player.team.colors
-    render json: {info: info, stats: stats["splits"].first["stat"], portrait: player_portrait_url}
+    render json: {info: info, stats: stats ? stats["splits"].first["stat"] : [], portrait: player_portrait_url}
+  end
+
+  def compare_to_baseline
+    baseline_player = Player.find(baseline_id_param)
+    render json: {comparison: @player.compare_to_baseline_player(baseline_player)}
   end
 
   def search
@@ -31,7 +36,7 @@ class PlayersController < ApplicationController
   end
 
   def rolling_stats
-    render status: :ok, json: {rolling_stats: @player.rolling_average}
+    render status: :ok, json: {rolling_stats: @player.rolling_stats}
   end
 
   private
@@ -45,8 +50,12 @@ class PlayersController < ApplicationController
     params.require(:player_id).to_i
   end
 
+  def baseline_id_param
+    params.require(:baseline_id).to_i
+  end
+
   def team_id_param
-    params.require(:team_id)
+    params.require(:team_id).to_i
   end
 
 end
