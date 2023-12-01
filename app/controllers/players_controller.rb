@@ -31,7 +31,7 @@ class PlayersController < ApplicationController
   end
 
   def search
-    players = Player.where("name LIKE ?", "%#{params['search']}%")
+    players = Player.where("name LIKE ?", "%#{params['query']}%")
     render status: :ok, json: {players: players}
   end
 
