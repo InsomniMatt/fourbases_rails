@@ -58,3 +58,5 @@ gem "httparty", "~> 0.21.0"
 # gem "baseline_stats"
 gem "baseline_stats"
 gem "ice_nine"
+
+gem "active_record_union", "~> 1.3"
