@@ -4,7 +4,8 @@ class Game < ApplicationRecord
 
   belongs_to :home_team, class_name: "Team"
   belongs_to :away_team, class_name: "Team"
-  has_many :at_bats
+  has_many :away_at_bats, -> { where inning_half: "top"}, class_name: "AtBat"
+  has_many :home_at_bats, -> { where inning_half: "bottom"}, class_name: "AtBat"
 
   scope :completed, -> { where("game_time < ?", DateTime.now) }
 

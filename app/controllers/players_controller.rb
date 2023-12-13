@@ -31,8 +31,12 @@ class PlayersController < ApplicationController
   end
 
   def search
-    players = Player.where("name LIKE ?", "%#{params['query']}%")
-    render status: :ok, json: {players: players}
+    players = Player.where("name LIKE ?", "%#{search_param}%")
+    teams = Team.where("city LIKE ? OR name LIKE ?", "%#{search_param}%", "%#{search_param}%")
+    teams.each do |team|
+      players += team.players
+    end
+    render status: :ok, json: {players: players, teams: teams}
   end
 
   def rolling_stats
@@ -56,6 +60,10 @@ class PlayersController < ApplicationController
 
   def team_id_param
     params.require(:team_id).to_i
+  end
+
+  def search_param
+    params.require(:query)
   end
 
 end

@@ -8,8 +8,7 @@ class AtBat < ApplicationRecord
 
   delegate :game_time, to: :game
 
-  HIT_ARRAY = %w(single double triple home_run).freeze
-  RESULT_ARRAY = %w(single double triple home_run walk hit_by_pitch field_error field_out force_out sac_fly sac_bunt grounded_into_double_play strikeout fielders_choice double_play).freeze
+  RESULT_ARRAY = %w(single double triple home_run walk intent_walk hit_by_pitch field_error field_out force_out sac_fly sac_bunt grounded_into_double_play strikeout fielders_choice double_play catcher_interf fielders_choice_out sac_fly_double_play strikeout_double_play caught_stealing_2b caught_stealing_3b pickoff_error_3b pickoff_caught_stealing_2b pickoff_1b pickoff_2b pickoff_3b pickoff_caught_stealing_3b pickoff_caught_stealing_home caught_stealing_home other_out wild_pitch stolen_base_2b stolen_base_3b triple_play balk).freeze
 
   scope :hits, -> { where(result: HIT_ARRAY)}
   scope :last_two_weeks, -> { includes(:game).where('games.game_time BETWEEN ? and ?', 2.weeks.ago, Time.now).references(:game)}
@@ -42,12 +41,17 @@ class AtBat < ApplicationRecord
     }
   end
 
+  HIT_ARRAY = %w(single double triple home_run).freeze
   def hit?
     HIT_ARRAY.include? result
   end
 
-  OBP_ARRAY = ["walk", "hit_by_pitch"] + HIT_ARRAY
+  OBP_ARRAY = %w(walk intent_walk hit_by_pitch).freeze
   def on_base?
+    (OBP_ARRAY + HIT_ARRAY).include? result
+  end
+
+  def no_hit_on_base?
     OBP_ARRAY.include? result
   end
 
@@ -61,18 +65,25 @@ class AtBat < ApplicationRecord
     BASE_COUNT_MAP[result]
   end
 
-  OUT_ARRAY = ["field_out", "grounded_into_double_play", "force_out", "strikeout"].freeze
+  OUT_ARRAY = %w(double_play field_error field_out fielders_choice fielders_choice_out force_out grounded_into_double_play strikeout strikeout_double_play triple_play)
   def out?
     OUT_ARRAY.include? result
   end
 
-  NO_AB_ARRAY = %w(walk hit_by_pitch sac_fly sac_bunt)
+  NO_AB_ARRAY = %w(walk intent_walk hit_by_pitch sac_fly sac_bunt sac_fly_double_play)
+  OTHER_COUNTED_AB = %w(catcher_interf)
+  AB_COUNT_ARRAY = HIT_ARRAY + OUT_ARRAY + OTHER_COUNTED_AB
   def count_at_bat?
-    !NO_AB_ARRAY.include? result
+    AB_COUNT_ARRAY.include? result
+  end
+
+  SAC_ABS = %w(sac_fly sac_fly_double_play)
+  def count_for_obp?
+    (HIT_ARRAY + OBP_ARRAY + OUT_ARRAY + OTHER_COUNTED_AB + SAC_ABS).include? result
   end
 
   def + other_bat
     raise "AtBat can only be added to other AtBat" unless other_bat.class == AtBat
-    AtBatCollection.new([self, other_bat])
+    AtBatRange.new([self, other_bat])
   end
 end

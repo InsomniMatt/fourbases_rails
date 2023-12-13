@@ -1,7 +1,9 @@
 class Team < ApplicationRecord
   has_many :players
   has_many :home_games, class_name: "Game", foreign_key: :home_team_id
+  has_many :home_at_bats, through: :home_games
   has_many :away_games, class_name: "Game", foreign_key: :away_team_id
+  has_many :away_at_bats, through: :away_games
 
 
   COLORS = {
@@ -171,5 +173,9 @@ class Team < ApplicationRecord
 
   def colors
     COLORS[id]
+  end
+
+  def at_bats
+    away_at_bats.union(home_at_bats)
   end
 end
