@@ -31,11 +31,12 @@ class PlayersController < ApplicationController
   end
 
   def search
-    players = Player.where("name LIKE ?", "%#{search_param}%")
+    players = Player.where("lower(name) LIKE ?", "%#{search_param.downcase}%")
     teams = Team.where("city LIKE ? OR name LIKE ?", "%#{search_param}%", "%#{search_param}%")
-    teams.each do |team|
-      players += team.players
-    end
+
+    # teams.each do |team|
+    #   players += team.players
+    # end
     render status: :ok, json: {players: players, teams: teams}
   end
 
