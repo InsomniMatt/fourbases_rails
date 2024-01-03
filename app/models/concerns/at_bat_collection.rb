@@ -94,7 +94,7 @@ module AtBatCollection
       AtBatRange.new(at_bats.last(num))
     end
 
-    def rolling_range size = 50, comparing = false
+    def rolling_range size = 100, comparing = false
       ranges = {}
       last_time = nil
       last_range = nil
@@ -127,6 +127,7 @@ module AtBatCollection
         obp: obp,
         slg: slg,
         ops: ops,
+        weight: at_bats.count,
         time: at_bats.last.game.game_time.to_date,
       }
     end
@@ -151,6 +152,28 @@ module AtBatCollection
           end
         end
         result
+      end
+    end
+
+    # Work in progress
+    # Calculating rolling stats with only a single pass through of the at bats
+    def rolling(size = 100)
+      removed_el = nil
+      results = []
+
+      at_bats.includes(:game).inject([]) do |arr, at_bat|
+        arr << at_bat
+        removed_el = arr.shift if arr.count > size
+
+        if arr.count == size
+
+        end
+      end
+    end
+
+    def ranges_by_at_bat
+      at_bats.map do |ab|
+        AtBatRange.new([ab])
       end
     end
   end

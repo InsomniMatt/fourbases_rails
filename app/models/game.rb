@@ -6,6 +6,11 @@ class Game < ApplicationRecord
   belongs_to :away_team, class_name: "Team"
   has_many :away_at_bats, -> { where inning_half: "top"}, class_name: "AtBat"
   has_many :home_at_bats, -> { where inning_half: "bottom"}, class_name: "AtBat"
+  has_many :at_bats do
+    def by_player(player_id)
+      where(:batter_id => player_id)
+    end
+  end
 
   scope :completed, -> { where("game_time < ?", DateTime.now) }
 
@@ -19,7 +24,6 @@ class Game < ApplicationRecord
       AtBat.parse_api_response(at_bat, id)
     end
     AtBat.create!(new_at_bats)
-
   end
 
 end
