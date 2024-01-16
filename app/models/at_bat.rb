@@ -105,4 +105,8 @@ class AtBat < ApplicationRecord
     raise "AtBat can only be added to other AtBat" unless other_bat.class == AtBat
     AtBatRange.new([self, other_bat])
   end
+
+  def group_by_day
+    game_time.to_date.to_s
+  end
 end

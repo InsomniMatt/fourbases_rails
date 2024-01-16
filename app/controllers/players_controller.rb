@@ -16,13 +16,11 @@ class PlayersController < ApplicationController
   # GET /player/:id/stats
   def stats
     player_portrait_url = @player.portrait_url
-    stats = Baseline.player_stats(@player.id)["stats"].first
-    info = stats ? stats["group"] : {}
-    info["playerName"] = @player.name
-    info["playerId"] = @player.id
-    info["teamLogo"] = @player.team.logo_url
-    info["teamColors"] = @player.team.colors
-    render json: {info: info, stats: stats ? stats["splits"].first["stat"] : [], portrait: player_portrait_url}
+    api_stats = Baseline.player_stats(@player.id)["stats"].first
+    info = api_stats ? api_stats["group"] : {}
+    info = info.merge({"playerName": @player.name, "playerId": @player.id, "teamLogo": @player.team.logo_url, "teamColors": @player.team.colors})
+    baseline_comparison = baseline_opt_param.present? ? @player.compare_to_baseline_player(Player.find(baseline_opt_param)) : false
+    render json: {info: info, stats: api_stats["splits"].first["stat"], portrait: player_portrait_url, rolling_stats: @player.rolling_stats(**stat_query_params.to_h.symbolize_keys), comparison_stats: baseline_comparison}
   end
 
   def compare_to_baseline
@@ -45,12 +43,10 @@ class PlayersController < ApplicationController
   end
 
   private
-  # Use callbacks to share common setup or constraints between actions.
   def set_player
     @player = Player.find(player_id_param)
   end
 
-  # Only allow a list of trusted parameters through.
   def player_id_param
     params.require(:player_id).to_i
   end
@@ -65,6 +61,14 @@ class PlayersController < ApplicationController
 
   def search_param
     params.require(:query)
+  end
+
+  def baseline_opt_param
+    params.permit(:baseline_id)["baseline_id"]
+  end
+
+  def stat_query_params
+    params.permit(:startDate, :endDate, :groupCount, :groupType)
   end
 
 end
