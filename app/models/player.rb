@@ -3,13 +3,17 @@ class Player < ApplicationRecord
 
   belongs_to :team
   delegate :games, to: :team
-  has_many :at_bats, foreign_key: :batter_id do
+  has_many :batter_at_bats, foreign_key: :batter_id, class_name: "AtBat" do
     def by_team(team)
       where(:game_id => team.games.pluck(:id))
     end
   end
   has_many :pitched_at_bats, foreign_key: :pitcher_id, class_name: "AtBat"
   has_many :pitches, through: :at_bats
+
+  def at_bats
+    pitcher? ? pitched_at_bats : batter_at_bats
+  end
 
   def api_stats
     Baseline.player_stats(id, {"stats": "season"})
@@ -40,23 +44,35 @@ class Player < ApplicationRecord
     Player.create! player_object
   end
 
-  def rolling_stats(size = 50, comparing = false)
-    ranges = rolling_range(size, comparing)
-    {
-      dates: ranges.map { _2[:time] },
-      avg: ranges.map { _2[:avg]},
-      obp: ranges.map {_2[:obp]},
-      slg: ranges.map { _2[:slg]},
-      ops: ranges.map { _2[:ops]}
-    }
+  def at_bat_by_date_range(startDate, endDate)
+    dated_at_bats = at_bats.includes(:game).where("games.game_time BETWEEN ? AND ?", DateTime.parse(startDate), DateTime.parse(endDate)).references(:games)
+    AtBatRange.new(dated_at_bats)
   end
 
-  def at_bats_by_game(manual_games = [])
-    games = manual_games.present? ? manual_games : self.games.includes(:at_bats).where("at_bats.batter_id = ?", id).references(:at_bats)
-    games.inject({}) do |result, game|
-      result[game.id] = game.at_bats
-      result
+  def rolling_stats(comparing: false, startDate: nil, endDate: nil, groupCount: 100, groupType: "AtBats")
+    if startDate.present? && endDate.present?
+      at_bat_range = at_bat_by_date_range(startDate, endDate)
+    else
+      at_bat_range = self
     end
+
+    case groupType
+    when "At Bats"
+      ranges = at_bat_range.rolling_range(groupCount.to_i, comparing)
+    when "Games"
+      ranges = at_bat_range.rolling_by_game(groupCount.to_i)
+    when "Days"
+      ranges = at_bat_range.rolling_by_day(groupCount.to_i)
+    end
+
+
+    {
+      dates: ranges.map { _1[:time] },
+      avg: ranges.map { _1[:avg]},
+      obp: ranges.map {_1[:obp]},
+      slg: ranges.map { _1[:slg]},
+      ops: ranges.map { _1[:ops]}
+    }
   end
 
   def portrait_url
@@ -76,4 +92,7 @@ class Player < ApplicationRecord
     result
   end
 
+  def pitcher?
+    position == "1"
+  end
 end

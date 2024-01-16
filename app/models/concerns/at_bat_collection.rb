@@ -118,7 +118,7 @@ module AtBatCollection
         end
         arr
       end
-      ranges
+      ranges.values
     end
 
     def stat_obj
@@ -175,6 +175,42 @@ module AtBatCollection
       at_bats.map do |ab|
         AtBatRange.new([ab])
       end
+    end
+
+    def at_bats_by_game
+      with_games = at_bats.includes(:game)
+      with_games.inject(Hash.new{|h, k| h[k] = []}) do |map, at_bat|
+        map[at_bat.game_id] << at_bat
+        map
+      end
+    end
+
+    def game_ids
+      at_bats.pluck(:game_id).uniq
+    end
+
+    def rolling_by_game(n = 10)
+      game_map = at_bats_by_game
+      result_map = []
+      game_ids.each_cons(n) do |id_array|
+        ab_range = id_array.inject([]) do |ab_array, game_id|
+          ab_array + game_map[game_id]
+        end
+        result_map << AtBatRange.new(ab_range)
+      end
+      result_map.map(&:stat_obj)
+    end
+
+    def rolling_by_day(n = 14)
+      ab_date_map = at_bats.group_by(&:group_by_day)
+      result_map = []
+      ab_date_map.keys.each_cons(n) do |date_array|
+        ab_range = date_array.inject([]) do |ab_array, date|
+          ab_array + ab_date_map[date]
+        end
+        result_map << AtBatRange.new(ab_range)
+      end
+      result_map.map(&:stat_obj)
     end
   end
 end
