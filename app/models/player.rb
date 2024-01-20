@@ -15,6 +15,10 @@ class Player < ApplicationRecord
     pitcher? ? pitched_at_bats : batter_at_bats
   end
 
+  def at_bat_count
+    at_bats.count
+  end
+
   def api_stats
     Baseline.player_stats(id, {"stats": "season"})
   end
@@ -44,52 +48,31 @@ class Player < ApplicationRecord
     Player.create! player_object
   end
 
-  def at_bat_by_date_range(startDate, endDate)
-    dated_at_bats = at_bats.includes(:game).where("games.game_time BETWEEN ? AND ?", DateTime.parse(startDate), DateTime.parse(endDate)).references(:games)
-    AtBatRange.new(dated_at_bats)
-  end
-
-  def rolling_stats(comparing: false, startDate: nil, endDate: nil, groupCount: 100, groupType: "AtBats")
-    if startDate.present? && endDate.present?
-      at_bat_range = at_bat_by_date_range(startDate, endDate)
-    else
-      at_bat_range = self
-    end
-
-    case groupType
-    when "At Bats"
-      ranges = at_bat_range.rolling_range(groupCount.to_i, comparing)
-    when "Games"
-      ranges = at_bat_range.rolling_by_game(groupCount.to_i)
-    when "Days"
-      ranges = at_bat_range.rolling_by_day(groupCount.to_i)
-    end
-
-
-    {
-      dates: ranges.map { _1[:time] },
-      avg: ranges.map { _1[:avg]},
-      obp: ranges.map {_1[:obp]},
-      slg: ranges.map { _1[:slg]},
-      ops: ranges.map { _1[:ops]}
-    }
-  end
-
   def portrait_url
     "https://img.mlbstatic.com/mlb-photos/image/upload/v1/people/#{id.to_s}/headshot/67/current";
   end
 
-  def compare_to_baseline_player(baseline_player)
-    comparison = compare_to_baseline(baseline_player)
-    result = {avg: [], dates: [], obp: [], ops: [], slg: []}
-    comparison.to_a.each do |el|
-      result[:dates] << el[0]
-      result[:avg] << el[1][:avg]
-      result[:obp] << el[1][:obp]
-      result[:ops] << el[1][:ops]
-      result[:slg] << el[1][:slg]
+  def compare_to_baseline_player(baseline_player, startDate: nil, endDate: nil, groupCount: 100, groupType: "Games")
+    baseline_range = baseline_player.range_by_query(comparing: true, startDate: startDate, endDate: endDate, groupCount: groupCount, groupType: groupType)
+    player_range = range_by_query(comparing: true, startDate: startDate, endDate: endDate, groupCount: groupCount, groupType: groupType)
+
+
+    player_range.each_with_index.inject(Hash.new{|h, k| h[k] = []}) do |map, pair|
+      stat_item, index = pair
+      map[:dates] << pair[:time]
+      map[:avg]
+      # binding.break
     end
-    result
+    # comparison = compare_to_baseline(baseline_player)
+    # result = {avg: [], dates: [], obp: [], ops: [], slg: []}
+    # comparison.to_a.each do |el|
+    #   result[:dates] << el[0]
+    #   result[:avg] << el[1][:avg]
+    #   result[:obp] << el[1][:obp]
+    #   result[:ops] << el[1][:ops]
+    #   result[:slg] << el[1][:slg]
+    # end
+    # result
   end
 
   def pitcher?

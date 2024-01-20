@@ -9,4 +9,8 @@ Rails.application.routes.draw do
     get 'search', to: 'players#search'
   end
 
+  resources :teams, only: [] do
+    get 'stats', to: "teams#stats"
+  end
+
 end

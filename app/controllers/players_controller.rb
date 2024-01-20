@@ -32,10 +32,11 @@ class PlayersController < ApplicationController
     players = Player.where("lower(name) LIKE ?", "%#{search_param.downcase}%")
     teams = Team.where("city LIKE ? OR name LIKE ?", "%#{search_param}%", "%#{search_param}%")
 
-    # teams.each do |team|
-    #   players += team.players
-    # end
-    render status: :ok, json: {players: players, teams: teams}
+    team_hashes = teams.inject([]) do |results, team|
+      players = players | team.players
+      results << {name: "#{team.city} #{team.name}", id: team.id, logo_url: team.logo_url, type: "team" }
+    end
+    render status: :ok, json: {players: players.sort_by(&:at_bat_count).reverse!, teams: team_hashes}
   end
 
   def rolling_stats
@@ -68,7 +69,7 @@ class PlayersController < ApplicationController
   end
 
   def stat_query_params
-    params.permit(:startDate, :endDate, :groupCount, :groupType)
+    params.permit(:startDate, :endDate, :groupCount, :groupType, :baseline_id)
   end
 
 end
