@@ -1,4 +1,6 @@
 class Team < ApplicationRecord
+  include AtBatCollection
+
   has_many :players
   has_many :home_games, class_name: "Game", foreign_key: :home_team_id
   has_many :home_at_bats, through: :home_games
@@ -159,6 +161,9 @@ class Team < ApplicationRecord
       },
   }
 
+  def full_name
+    "#{city} #{name}"
+  end
   def games
     home_games.or(away_games)
   end
@@ -176,6 +181,6 @@ class Team < ApplicationRecord
   end
 
   def at_bats
-    away_at_bats.union(home_at_bats)
+    away_at_bats.union(home_at_bats).order(:id)
   end
 end
