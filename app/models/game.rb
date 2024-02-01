@@ -21,9 +21,11 @@ class Game < ApplicationRecord
   def import_at_bats
     at_bats.delete_all
     new_at_bats = Baseline.game_at_bats(id).map do |at_bat|
+      next unless at_bat.dig("result", "eventType").present?
+
       AtBat.parse_api_response(at_bat, id)
     end
-    AtBat.create!(new_at_bats)
+    AtBat.create!(new_at_bats.compact)
   end
 
 end

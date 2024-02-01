@@ -183,4 +183,12 @@ class Team < ApplicationRecord
   def at_bats
     away_at_bats.union(home_at_bats).order(:id)
   end
+
+  def get_info
+    {
+      :id => id,
+      :name => full_name,
+      :logo_url => logo_url
+    }
+  end
 end

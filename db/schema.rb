@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_12_01_192035) do
+ActiveRecord::Schema[7.0].define(version: 2024_02_01_005042) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -64,6 +64,35 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_01_192035) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["at_bat_id"], name: "index_pitches_on_at_bat_id"
+  end
+
+  create_table "player_stats", force: :cascade do |t|
+    t.bigint "player_id"
+    t.string "avg"
+    t.string "obp"
+    t.string "slg"
+    t.string "ops"
+    t.integer "hits"
+    t.integer "doubles"
+    t.integer "triples"
+    t.integer "home_runs"
+    t.integer "walks"
+    t.integer "strikeouts"
+    t.integer "runs"
+    t.integer "games"
+    t.integer "at_bats"
+    t.integer "rbi"
+    t.integer "stolen_bases"
+    t.integer "caught_stealing"
+    t.integer "plate_appearances"
+    t.integer "sac_fly"
+    t.integer "sacrifices"
+    t.integer "hbp"
+    t.integer "gidp"
+    t.integer "year"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["player_id"], name: "index_player_stats_on_player_id"
   end
 
   create_table "players", force: :cascade do |t|
