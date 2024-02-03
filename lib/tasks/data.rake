@@ -50,4 +50,13 @@ namespace :data do
       sleep (0.25).second
     end
   end
+
+  desc "Sync team ids to at bats"
+  task sync_at_bats: :environment do
+    Team.all.each do |team|
+      team.home_at_bats.update_all(:team_id => team.id)
+      team.away_at_bats.update_all(:team_id => team.id)
+      puts "team updated #{team.full_name}"
+    end
+  end
 end

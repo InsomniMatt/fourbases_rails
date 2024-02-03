@@ -14,7 +14,8 @@ class TeamsController < ApplicationController
       teamName: @team.full_name,
       teamId: @team.id,
     }
-    render status: :ok, json: {stats: @team.stats,rolling_stats: @team.rolling_stats(**stat_query_params.to_h.symbolize_keys), info: info, portrait: @team.logo_url}
+    stats = @team.stats(**stat_query_params.to_h.symbolize_keys)
+    render status: :ok, json: stats.merge!({info: info, portrait: @team.logo_url})
   end
 
   # GET /players/1
@@ -43,6 +44,10 @@ class TeamsController < ApplicationController
 
   def stat_query_params
     params.permit(:startDate, :endDate, :groupCount, :groupType, :baseline_id)
+  end
+
+  def date_query_params
+    params.permit(:startDate, :endDate)
   end
 
 end

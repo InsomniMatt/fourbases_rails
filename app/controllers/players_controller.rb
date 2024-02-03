@@ -47,10 +47,11 @@ class PlayersController < ApplicationController
   def stats
     player_portrait_url = @player.portrait_url
     api_stats = Baseline.player_stats(@player.id)["stats"].first
-    info = api_stats ? api_stats["group"] : {}
+    info = api_stats.present? ? api_stats["group"] : {}
     info = info.merge({"playerName": @player.name, "playerId": @player.id, "teamLogo": @player.team.logo_url, "teamColors": @player.team.colors})
-    baseline_comparison = baseline_opt_param.present? ? @player.compare_to_baseline_player(Player.find(baseline_opt_param)) : false
-    render json: {info: info, stats: api_stats["splits"].first["stat"], portrait: player_portrait_url, rolling_stats: @player.rolling_stats(**stat_query_params.to_h.symbolize_keys), comparison_stats: baseline_comparison}
+    # baseline_comparison = baseline_opt_param.present? ? @player.compare_to_baseline_player(Player.find(baseline_opt_param)) : false
+    stats = @player.stats(**stat_query_params.to_h.symbolize_keys)
+    render json: stats.merge({info: info, portrait: player_portrait_url})
   end
 
   def compare_to_baseline

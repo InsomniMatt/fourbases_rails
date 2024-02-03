@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_02_01_005042) do
+ActiveRecord::Schema[7.0].define(version: 2024_02_02_225640) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -34,9 +34,16 @@ ActiveRecord::Schema[7.0].define(version: 2024_02_01_005042) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "at_bat_index"
+    t.integer "team_id"
+    t.integer "defense_team_id"
     t.index ["batter_id"], name: "index_at_bats_on_batter_id"
+    t.index ["defense_team_id"], name: "index_at_bats_on_defense_team_id"
     t.index ["game_id"], name: "index_at_bats_on_game_id"
+    t.index ["inning"], name: "index_at_bats_on_inning"
+    t.index ["outs"], name: "index_at_bats_on_outs"
     t.index ["pitcher_id"], name: "index_at_bats_on_pitcher_id"
+    t.index ["result"], name: "index_at_bats_on_result"
+    t.index ["team_id"], name: "index_at_bats_on_team_id"
   end
 
   create_table "games", force: :cascade do |t|
@@ -48,6 +55,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_02_01_005042) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["away_team_id"], name: "index_games_on_away_team_id"
+    t.index ["game_time"], name: "index_games_on_game_time"
     t.index ["home_team_id"], name: "index_games_on_home_team_id"
   end
 
@@ -104,6 +112,9 @@ ActiveRecord::Schema[7.0].define(version: 2024_02_01_005042) do
     t.string "bat_arm"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_players_on_name"
+    t.index ["position"], name: "index_players_on_position"
+    t.index ["team_id"], name: "index_players_on_team_id"
   end
 
   create_table "teams", force: :cascade do |t|
