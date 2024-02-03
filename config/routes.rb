@@ -7,6 +7,7 @@ Rails.application.routes.draw do
 
   resource :players, only: [] do
     get 'search', to: 'players#search'
+    get 'trending', to: 'players#trending'
   end
 
   resources :teams, only: [] do

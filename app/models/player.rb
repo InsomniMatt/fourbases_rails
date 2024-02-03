@@ -2,14 +2,21 @@ class Player < ApplicationRecord
   include AtBatCollection
 
   belongs_to :team
-  delegate :games, to: :team
+  # delegate :games, to: :team
   has_many :batter_at_bats, foreign_key: :batter_id, class_name: "AtBat" do
     def by_team(team)
       where(:game_id => team.games.pluck(:id))
     end
   end
   has_many :pitched_at_bats, foreign_key: :pitcher_id, class_name: "AtBat"
-  has_many :pitches, through: :at_bats
+  has_many :pitches, through: :batter_at_bats
+  has_many :player_stats
+
+  POSITION_ABBREVIATIONS = {"1" => "P", "2" => "C", "3" => "1B", "4" => "2B", "5" => "3B", "6" => "SS", "7" => "LF", "8" => "CF", "9" => "RF"}.freeze
+
+  def games
+    at_bats.includes(:game)
+  end
 
   def at_bats
     pitcher? ? pitched_at_bats : batter_at_bats
@@ -77,5 +84,22 @@ class Player < ApplicationRecord
 
   def pitcher?
     position == "1"
+  end
+
+  def get_stats(year = 2023, force_sync = false)
+    if force_sync || player_stats.where(:year => year).empty?
+      PlayerStat.statcast_sync!(self)
+    end
+    player_stats.where(:year => year).last
+  end
+
+  def get_info
+    {
+      id: id,
+      name: name,
+      position: POSITION_ABBREVIATIONS[self.position],
+      team_id: team.id,
+      team_name: team.full_name,
+    }
   end
 end

@@ -2,6 +2,7 @@ class AtBat < ApplicationRecord
   default_scope { order(game_id: :desc, at_bat_index: :asc)}
 
   belongs_to :game
+  belongs_to :team
   belongs_to :pitcher, class_name: "Player"
   belongs_to :batter, class_name: "Player"
   has_many :pitches
@@ -25,7 +26,7 @@ class AtBat < ApplicationRecord
     end
   end
 
-  def self.parse_api_response(at_bat, game_id)
+  def self.parse_api_response(at_bat, game_id, home_team_id, away_team_id)
     pitch_data = at_bat["playEvents"]
     pitches = pitch_data.map do |pitch|
       next if pitch["details"]["event"] == "Game Advisory" || pitch.dig("details", "type","code").nil?
@@ -43,6 +44,8 @@ class AtBat < ApplicationRecord
         :result => at_bat["result"]["eventType"].to_sym,
         :pitches => pitches.compact,
         :at_bat_index => at_bat["atBatIndex"],
+        :team_id => at_bat["about"]["halfInning"] == "top" ? away_team_id : home_team_id,
+        :defense_team_id => at_bat["about"]["halfInning"] == "top" ? home_team_id : away_team_id,
     }
   end
 
@@ -108,5 +111,18 @@ class AtBat < ApplicationRecord
 
   def group_by_day
     game_time.to_date.to_s
+  end
+
+  def sync_team_info!
+    away_team = game.away_team_id
+    home_team = game.home_team_id
+    if inning_half == "top"
+      self.team_id = away_team
+      self.defense_team_id = home_team
+    else
+      self.team_id = home_team
+      self.defense_team_id = away_team
+    end
+    self.save!
   end
 end

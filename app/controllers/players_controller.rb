@@ -13,14 +13,45 @@ class PlayersController < ApplicationController
     render json: @player
   end
 
+  def trending
+    leaderboard = Baseline.stats(:season => 2023, :stats => "season", :group => "hitting", :sortStat => "OPS").call_api["stats"].first["splits"]
+    leaderboard.map! do |player|
+      {
+          info: {
+              id: player["player"]["id"],
+              name: player["player"]["fullName"],
+              position: player["position"]["abbreviation"],
+              team_id: player["team"]["id"],
+              team_name: Team.find(player["team"]["id"]).full_name,
+          },
+          stats: {
+            games: player["stat"]["gamesPlayed"],
+            atBats: player["stat"]["atBats"],
+            runs: player["stat"]["runs"],
+            doubles: player["stat"]["doubles"],
+            triples: player["stat"]["triples"],
+            home_runs: player["stat"]["homeRuns"],
+            hits: player["stat"]["hits"],
+            avg: player["stat"]["avg"],
+            obp: player["stat"]["obp"],
+            slg: player["stat"]["slg"],
+            ops: player["stat"]["ops"],
+            rbi: player["stat"]["rbi"]
+          }
+      }
+    end
+    render status: :ok, json: {players: leaderboard, teams: []}
+  end
+
   # GET /player/:id/stats
   def stats
     player_portrait_url = @player.portrait_url
     api_stats = Baseline.player_stats(@player.id)["stats"].first
-    info = api_stats ? api_stats["group"] : {}
+    info = api_stats.present? ? api_stats["group"] : {}
     info = info.merge({"playerName": @player.name, "playerId": @player.id, "teamLogo": @player.team.logo_url, "teamColors": @player.team.colors})
-    baseline_comparison = baseline_opt_param.present? ? @player.compare_to_baseline_player(Player.find(baseline_opt_param)) : false
-    render json: {info: info, stats: api_stats["splits"].first["stat"], portrait: player_portrait_url, rolling_stats: @player.rolling_stats(**stat_query_params.to_h.symbolize_keys), comparison_stats: baseline_comparison}
+    # baseline_comparison = baseline_opt_param.present? ? @player.compare_to_baseline_player(Player.find(baseline_opt_param)) : false
+    stats = @player.stats(**stat_query_params.to_h.symbolize_keys)
+    render json: stats.merge({info: info, portrait: player_portrait_url})
   end
 
   def compare_to_baseline
@@ -29,14 +60,18 @@ class PlayersController < ApplicationController
   end
 
   def search
-    players = Player.where("lower(name) LIKE ?", "%#{search_param.downcase}%")
+    players = Player.where("lower(name) LIKE ?", "%#{search_param.downcase}%").includes(:player_stats).sort_by(&:at_bat_count).reverse!
     teams = Team.where("city LIKE ? OR name LIKE ?", "%#{search_param}%", "%#{search_param}%")
 
     team_hashes = teams.inject([]) do |results, team|
       players = players | team.players
-      results << {name: "#{team.city} #{team.name}", id: team.id, logo_url: team.logo_url, type: "team" }
+      results << team.get_info
     end
-    render status: :ok, json: {players: players.sort_by(&:at_bat_count).reverse!, teams: team_hashes}
+
+    player_array = players.map do |player|
+      {info: player.get_info, stats: player.player_stats.first || player.get_stats}
+    end
+    render status: :ok, json: {players: player_array, teams: team_hashes}
   end
 
   def rolling_stats

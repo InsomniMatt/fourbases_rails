@@ -6,6 +6,7 @@ class Team < ApplicationRecord
   has_many :home_at_bats, through: :home_games
   has_many :away_games, class_name: "Game", foreign_key: :away_team_id
   has_many :away_at_bats, through: :away_games
+  has_many :at_bats
 
 
   COLORS = {
@@ -180,7 +181,11 @@ class Team < ApplicationRecord
     COLORS[id]
   end
 
-  def at_bats
-    away_at_bats.union(home_at_bats).order(:id)
+  def get_info
+    {
+      :id => id,
+      :name => full_name,
+      :logo_url => logo_url
+    }
   end
 end

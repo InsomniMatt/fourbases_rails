@@ -132,18 +132,7 @@ module AtBatCollection
       }
     end
 
-    def stats
-      {
-        atBats: at_bats.count,
-        hits: hits.count,
-        doubles: count("double"),
-        triples: count("triple"),
-        homeRuns: count("home_run"),
-        avg: avg,
-        obp: obp,
-        ops: ops,
-      }
-    end
+
 
     def compare_to_baseline baseline_player
       baseline_rolling_range = baseline_player.rolling_range(50, true)
@@ -227,37 +216,54 @@ module AtBatCollection
     end
 
     def at_bat_by_date_range(startDate, endDate)
-      dated_at_bats = at_bats.includes(:game).where("games.game_time BETWEEN ? AND ?", DateTime.parse(startDate), DateTime.parse(endDate)).references(:games)
+      dated_at_bats = at_bats.includes(:game).where("games.game_time BETWEEN ? AND ?", DateTime.parse(startDate), DateTime.parse(endDate)).order("at_bats.id").references(:games)
       AtBatRange.new(dated_at_bats)
     end
 
-    def range_by_query(comparing: false, startDate: nil, endDate: nil, groupCount: 100, groupType: "At Bats")
+    def range_by_query(ranges, comparing: false, groupCount: 100, groupType: "At Bats")
+      case groupType
+      when "At Bats"
+        ranges = ranges.rolling_range(groupCount.to_i, comparing)
+      when "Games"
+        ranges = ranges.rolling_by_game(groupCount.to_i)
+      when "Days"
+        ranges = ranges.rolling_by_day(groupCount.to_i)
+      end
+      ranges
+    end
+
+    def base_stats(at_bat_range)
+      {
+        atBats: at_bat_range.stat_ab_count,
+        hits: at_bat_range.hit_count,
+        doubles: at_bat_range.count("double"),
+        triples: at_bat_range.count("triple"),
+        homeRuns: at_bat_range.count("home_run"),
+        avg: at_bat_range.avg,
+        obp: at_bat_range.obp,
+        ops: at_bat_range.ops,
+      }
+    end
+
+    def stats(comparing: false, startDate: nil, endDate: nil, groupCount: 100, groupType: "At Bats")
       if startDate.present? && endDate.present?
         at_bat_range = at_bat_by_date_range(startDate, endDate)
       else
         at_bat_range = self
       end
 
-      case groupType
-      when "At Bats"
-        ranges = at_bat_range.rolling_range(groupCount.to_i, comparing)
-      when "Games"
-        ranges = at_bat_range.rolling_by_game(groupCount.to_i)
-      when "Days"
-        ranges = at_bat_range.rolling_by_day(groupCount.to_i)
-      end
-      ranges
-    end
 
-    def rolling_stats(comparing: false, startDate: nil, endDate: nil, groupCount: 100, groupType: "At Bats")
-      ranges = range_by_query(comparing: comparing, startDate: startDate, endDate: endDate, groupCount: groupCount, groupType: groupType)
+      range_set = range_by_query(at_bat_range, comparing: comparing, groupCount: groupCount, groupType: groupType)
 
       {
-        dates: ranges.map { _1[:time] },
-        avg: ranges.map { _1[:avg]},
-        obp: ranges.map {_1[:obp]},
-        slg: ranges.map { _1[:slg]},
-        ops: ranges.map { _1[:ops]}
+        "rolling_stats" => {
+            dates: range_set.map { _1[:time] },
+            avg: range_set.map { _1[:avg]},
+            obp: range_set.map {_1[:obp]},
+            slg: range_set.map { _1[:slg]},
+            ops: range_set.map { _1[:ops]}
+        },
+        "stats" => base_stats(at_bat_range),
       }
     end
   end
